@@ -26,8 +26,9 @@ Instruction set parser and source preprocessor work on the same level by reading
 
 You can look at the most up-to-date examples in the /tests directory. Still, here's one:
 
-_Source file (test_source.txt):_
-`
+_Source file (test_source.txt)_:
+
+```
 	INP A		; Read a value from the input to the accumulator
 	LD B, A		; B = A
 	INP A
@@ -39,10 +40,11 @@ loop:
 	JP P, loop	; If B > 0 goto loop
 	OUT A		; Output A
 	HALT		; Terminate the program's execution
-`
+```
 
-_Processor architecture file (test_architecture.txt):_
-`
+_Processor architecture file (test_architecture.txt)_:
+
+```
 WORD_SIZE(4)
 
 INSTRUCTION(0b0000, 1, 'HALT')
@@ -61,10 +63,11 @@ INSTRUCTION(0b1100, 1, 'INP A')
 INSTRUCTION(0b1101, 1, 'OUT A')
 INSTRUCTION(0b1110, 2, 'JP P,_$address')
 INSTRUCTION(0b1111, 2, 'JP M,_$address')
-`
+```
 
-_Compiled object file (output.kobj):_
-`
+_Compiled object file (output.kobj)_:
+
+```
 1100
 0100
 1100
@@ -77,4 +80,4 @@ _Compiled object file (output.kobj):_
 0110
 1101
 0000
-`
+```
