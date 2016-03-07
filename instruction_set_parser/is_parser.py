@@ -25,6 +25,9 @@ class ParserError(Exception):
         self.error_id = error_id
         self.error_msg = error_msg
 
+    def __str__(self):
+        return self.error_msg
+
     def print_err(self, ln, ctx):
         print('PREPROCESSOR ERROR {} on line {}: {}\n\t--> {}'.format(self.error_id, ln, self.error_msg, ctx))
 

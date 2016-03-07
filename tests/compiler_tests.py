@@ -61,16 +61,11 @@ class InstructionEncoderTestCase(unittest.TestCase):
 
     def test_encoding_simple(self):
         instr = is_parser.Instruction(0, 1, 'HALT')
-        self.assertEquals([0], C._encode_instruction({'name': 'HALT', 'args': []}, instr))
+        self.assertEquals([0], C._encode_instruction(instr, []))
 
     def test_encoding_literal(self):
         instr = is_parser.Instruction(5, 2, 'LD A,_$literal')
-        self.assertEquals([5, 7], C._encode_instruction({'name': 'LD', 'args': ['A', '7']}, instr))
-
-    def test_encoding_address(self):
-        instr = is_parser.Instruction(10, 2, 'JP P,_$address')
-        # Account for the offset!
-        self.assertEquals([10, 3], C._encode_instruction({'name': 'JP', 'args': ['P', '2']}, instr))
+        self.assertEquals([5, 7], C._encode_instruction(instr, ['A', '7']))
 
 
 class FindMatchingInstructionTestCase(unittest.TestCase):
@@ -110,6 +105,10 @@ class BinaryToASCIITestCase(unittest.TestCase):
     def test_encoding_large_object(self):
         self.assertEquals('00000010\n00000011\n11111111\n00000111\n', C._binary_to_ascii([2, 3, 255, 7], 8))
 
+class AdjustAddressesTestCase(unittest.TestCase):
+    """Tests for the _adjust_addresses function of the compiler"""
+    # Todo: Implement some unit tests. Right now there's a few integration tests about this.
+    pass
 
 def suite():
     tokenize_line_suite = unittest.TestLoader().loadTestsFromTestCase(TokenizeLineTestCase)
@@ -117,7 +116,8 @@ def suite():
     instruction_encoder_suite = unittest.TestLoader().loadTestsFromTestCase(InstructionEncoderTestCase)
     findmatching_suite = unittest.TestLoader().loadTestsFromTestCase(FindMatchingInstructionTestCase)
     btascii_suite = unittest.TestLoader().loadTestsFromTestCase(BinaryToASCIITestCase)
+    adjustaddress_suite = unittest.TestLoader().loadTestsFromTestCase(AdjustAddressesTestCase)
 
     return unittest.TestSuite([tokenize_line_suite, tokenize_instr_suite, instruction_encoder_suite,
-                               findmatching_suite, btascii_suite])
+                               findmatching_suite, btascii_suite, adjustaddress_suite])
 

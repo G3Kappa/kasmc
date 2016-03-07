@@ -1,11 +1,15 @@
-	INP A		; Carica in A un valore dall'input
-	LD B, A		; Copia A in B
-	INP A		; Carica in A un valore dall'input
-	LD C, A		; Copia A in C
-	LD A, 0 	; Carica in A il valore 0
+test0:          ; Comments!
+	INP A
+	LD B, A     ; More comments.
+	INP A
+	LD C, A
+	LD A, 0
 loop:
-	ADD A, C	; A = A + C
-	DEC B		; Decrementa B
-	JP P, loop	; Se B > 0 torna a loop:
-	OUT A		; Mostra A in output
-	HALT		; Termina l'esecuzione del programma
+	ADD A, C
+	DEC B       ; Another comment.
+	JP P, loop
+	JP M, test0
+	OUT A
+	JP test1
+test1:
+	HALT

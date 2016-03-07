@@ -14,6 +14,9 @@ class CompilerError(Exception):
         self.error_id = error_id
         self.error_msg = error_msg
 
+    def __str__(self):
+        return self.error_msg
+
     def print_err(self, ln, ctx):
         print('COMPILER ERROR {} on line {}: {}\n\t--> {}'.format(self.error_id, ln, self.error_msg, ctx))
 
@@ -34,8 +37,6 @@ COMPILER_WARN_NO_OUTPUT = CompilerError(101, 'No output filename specified or no
 
 
 class Compiler:
-
-    ADDR_OFFSET = 0
 
     @classmethod
     def _tokenize_line(cls, line):
@@ -123,19 +124,13 @@ class Compiler:
             return False
 
     @classmethod
-    def _encode_instruction(cls, implementation, signature):
+    def _encode_instruction(cls, signature, args):
         encoded_instr = [signature.opcode]
 
-        if len(implementation['args']) > 0:
-            instr_tokens = cls._tokenize_instruction(signature)
+        if len(args) > 0:
             # Skip non-literals since they can't be encoded and are assumed to be part of the opcode
-            for i, arg in enumerate([_ for _ in implementation['args']]):
-                # If this arg is an address, add the necessary offset
-                if instr_tokens['args'][i] == '$address':
-                    cls.ADDR_OFFSET += signature.size - 1
-                    encoded_instr.append(int(arg) + cls.ADDR_OFFSET)
-                # Otherwise, if it is a literal, just append it
-                elif cls._is_literal(arg):
+            for i, arg in enumerate(args):
+                if cls._is_literal(arg):
                     encoded_instr.append(int(arg))
 
         if len(encoded_instr) != signature.size:
@@ -151,6 +146,28 @@ class Compiler:
         return str_out
 
     @classmethod
+    def _calculate_offset(cls, program, until):
+        offset = 0
+        for i in range(0, until):
+            offset += program[i]['instruction'].size - 1
+        return offset
+
+    @classmethod
+    def _adjust_addresses(cls, call, program):
+        # Tokenize the instruction
+        instr_tokens = cls._tokenize_instruction(call['instruction'])
+        # Get the number of addresses encoded by this instruction
+        addrs = [(i, arg) for i, arg in enumerate(instr_tokens['args'])
+                 if re.match(r'\$address', arg) is not None]
+        # Don't do anything if this instruction doesn't encode any
+        if len(addrs) == 0:
+            return
+        # For each encoded address
+        for i, addr in addrs:
+            # Calculate the offset from the beginning of the program
+            call['args'][i] = int(call['args'][i]) + cls._calculate_offset(program, int(call['args'][i]))
+
+    @classmethod
     def parse_file(cls, lines, output, pa, output_binary=True, output_object=False):
         """Compiles a preprocessed source file and outputs a binary or textual representation.
         :param lines: The preprocessed file to compile. See the 'input_preprocessor' package.
@@ -160,14 +177,14 @@ class Compiler:
         :param output_object: If true, outputs a text file where each bit is encoded as a character.
         """
 
-        # Each preprocessed address needs to be offset since one instruction can be several WORDs wide
-        cls.ADDR_OFFSET = 0
-
         # No output? Nothing to do.
         if not output or (not output_binary and not output_object):
             COMPILER_WARN_NO_OUTPUT.print_warn(-1, '')
             return
 
+        # Program, contains instruction signatures and their given arguments
+        program = []
+        # Object, contains compiled code
         obj = bytearray()
 
         ln = 0  # Line number
@@ -182,13 +199,23 @@ class Compiler:
             instr = cls._find_matching_instruction(pa, tokens)
             if instr is None:
                 COMPILER_ERR_UNDEFINED_INSTRUCTION.print_raise(ln, cur_line)
+            # Add the instruction and its given args to the program
+            program.append({'instruction': instr, 'args': tokens['args']})
+            ln += 1
+
+        for i, call in enumerate(program):
+            # Apply an offset to every address. An address initially points to the correct line of code (i),
+            # but as instructions are encoded, the object file grows larger and the offset must be recalculated.
+            # So, if an instruction encodes an address, we have to add the computed sum of the extra size of the i-1
+            # instructions preceding it.
+            cls._adjust_addresses(call, program)
+
             # Encode the instruction, and its arguments, and append it to the object file
-            encoded_instr = cls._encode_instruction(tokens, instr)
+            encoded_instr = cls._encode_instruction(call['instruction'], call['args'])
             if encoded_instr is None:
-                COMPILER_ERR_UNCOMPILABLE_INSTRUCTION.print_raise(ln, cur_line)
+                COMPILER_ERR_UNCOMPILABLE_INSTRUCTION.print_raise(i, call['instruction'])
 
             obj.extend(encoded_instr)
-            ln += 1
 
         if output_binary:
             # If something that can be written on has been passed, use it
