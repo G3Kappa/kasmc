@@ -1,4 +1,5 @@
 import re
+import math
 from instruction_set_parser import is_parser
 
 
@@ -31,8 +32,10 @@ class CompilerError(Exception):
 COMPILER_ERR_INVALID_FILE = CompilerError(1, 'Could not read the input file.')
 COMPILER_ERR_MISSING_SYMBOL = CompilerError(2, 'Expected variable, number or label but got nothing instead.')
 COMPILER_ERR_UNDEFINED_INSTRUCTION = CompilerError(3, 'Undefined instruction signature.')
-COMPILER_ERR_UNCOMPILABLE_INSTRUCTION = CompilerError(4, 'The expected instruction size (in WORDs) '
-                                                         'and the actual instruction size differ')
+COMPILER_ERR_UNCOMPILABLE_INSTRUCTION = CompilerError(4, 'Instruction size mismatch. '
+                                                         'The instruction may be being called incorrectly, '
+                                                         'or a literal larger than WORD_SIZE is being passed.')
+
 COMPILER_WARN_NO_OUTPUT = CompilerError(101, 'No output filename specified or no output flags set. Won\'t do anything.')
 
 
@@ -41,7 +44,7 @@ class Compiler:
     @classmethod
     def _tokenize_line(cls, line):
         # Note: Please don't try to understand it. One victim is enough already. Just know that it works.
-        regexp = r'^(?P<instruction>\w+)(?:\s+(?P<arg1>\.?[a-zA-Z0-9]+)' \
+        regexp = r'^(?P<instruction>\w+)(?:\s+(?P<arg1>\(?\.?[a-zA-Z0-9]+\)?)' \
                  r'(?P<extraargs>(?:\s*,\s*\(?\s*[a-zA-Z0-9]+\s*\)?\s*)*))?$'
         # Examples covered by this regex:
         # LD A, B
@@ -96,6 +99,13 @@ class Compiler:
         return {'name': instr, 'args': args}
 
     @classmethod
+    def _is_literal(cls, arg):
+        try:
+            return int(arg) is not None
+        except ValueError:
+            return False
+
+    @classmethod
     def _find_matching_instruction(cls, pa, tokens):
         matching_instr = None
         best_score = -1  # The number of arguments that are the same
@@ -117,21 +127,23 @@ class Compiler:
         return matching_instr
 
     @classmethod
-    def _is_literal(cls, arg):
-        try:
-            return int(arg) is not None
-        except ValueError:
-            return False
-
-    @classmethod
-    def _encode_instruction(cls, signature, args):
+    def _encode_instruction(cls, signature, args, word_size):
         encoded_instr = [signature.opcode]
 
         if len(args) > 0:
             # Skip non-literals since they can't be encoded and are assumed to be part of the opcode
             for i, arg in enumerate(args):
+                # Remove parentheses in literals that represent memory locations
+                _match = re.match(r'\((\d+)\)', str(arg))
+                if _match is not None:
+                    arg = _match.group(1)
+                # Append the argument to the encoded instruction
                 if cls._is_literal(arg):
-                    encoded_instr.append(int(arg))
+                    iarg = int(arg)
+                    # (It cannot be larger than a single word, but it can be smaller)
+                    if iarg.bit_length() > word_size:
+                        return None
+                    encoded_instr.append(iarg)
 
         if len(encoded_instr) != signature.size:
             return None
@@ -211,7 +223,7 @@ class Compiler:
             cls._adjust_addresses(call, program)
 
             # Encode the instruction, and its arguments, and append it to the object file
-            encoded_instr = cls._encode_instruction(call['instruction'], call['args'])
+            encoded_instr = cls._encode_instruction(call['instruction'], call['args'], pa.WORD_SIZE)
             if encoded_instr is None:
                 COMPILER_ERR_UNCOMPILABLE_INSTRUCTION.print_exit(i, call['instruction'])
 

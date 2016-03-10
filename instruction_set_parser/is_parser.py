@@ -40,7 +40,8 @@ class ParserError(Exception):
 
 PARSER_ERR_INVALID_FILE = ParserError(1, 'Could not read the input file.')
 PARSER_ERR_INVALID_SYNTAX = ParserError(2, 'Invalid syntax. (Bad keyword or argument misuse?)')
-PARSER_ERR_DUPLICATE_OPCODE = ParserError(3, 'Duplicate OpCode; an instruction with the same OpCode is already defined.')
+PARSER_ERR_DUPLICATE_OPCODE = ParserError(3, 'Duplicate opcode; an instruction with the same opcode is already defined.')
+PARSER_ERR_UNPARSABLE_INSTRUCTION = ParserError(4, 'The instruction\'s opcode is too large to fit in WORD_SIZE bits.')
 
 
 class InstructionSetParser:
@@ -61,6 +62,10 @@ class InstructionSetParser:
         opcode = int(args[0])
         size = int(args[1])
         syntax = args[2]
+
+        # Make sure that the opcode can be encoded in WORD_SIZE bits
+        if opcode.bit_length() > pa.WORD_SIZE:
+            PARSER_ERR_UNPARSABLE_INSTRUCTION.print_exit(ln, line)
 
         # Check that an instruction with the same opcode wasn't added
         for instr in pa.INSTRUCTION_SET:

@@ -20,6 +20,9 @@ class TokenizeLineTestCase(unittest.TestCase):
     def test_extraction_with_variable(self):
         self.assertEquals({'args': ['A', 'B'], 'name': 'LD'}, C._tokenize_line('LD A, B'))
 
+    def test_extraction_with_memory_access(self):
+        self.assertEquals({'args': ['(5)', 'A'], 'name': 'LD'}, C._tokenize_line('LD (5), A'))
+
     def test_complex_extraction(self):
         self.assertEquals({'args': ['A', 'B', '32'], 'name': 'CPLX'},
                           C._tokenize_line('CPLX A, B, 32'))
@@ -50,6 +53,10 @@ class TokenizeInstructionTestCase(unittest.TestCase):
         instr = is_parser.Instruction(0, 2, 'JP M,_$address')
         self.assertEquals({'args': ['M', '$address'], 'name': 'JP'}, C._tokenize_instruction(instr))
 
+    def test_extraction_with_memory_location(self):
+        instr = is_parser.Instruction(0, 2, 'LD ($literal),_A')
+        self.assertEquals({'args': ['($literal)', 'A'], 'name': 'LD'}, C._tokenize_instruction(instr))
+
     def test_complex_extraction(self):
         instr = is_parser.Instruction(0, 3, 'CPLX A,_$address, $literal')
         self.assertEquals({'args': ['A', '$address', '$literal'], 'name': 'CPLX'}, C._tokenize_instruction(instr))
@@ -61,11 +68,19 @@ class InstructionEncoderTestCase(unittest.TestCase):
 
     def test_encoding_simple(self):
         instr = is_parser.Instruction(0, 1, 'HALT')
-        self.assertEquals([0], C._encode_instruction(instr, []))
+        self.assertEquals([0], C._encode_instruction(instr, [], 8))
 
     def test_encoding_literal(self):
         instr = is_parser.Instruction(5, 2, 'LD A,_$literal')
-        self.assertEquals([5, 7], C._encode_instruction(instr, ['A', '7']))
+        self.assertEquals([5, 7], C._encode_instruction(instr, ['A', '7'], 8))
+
+    def test_encoding_memory_location(self):
+        instr = is_parser.Instruction(5, 2, 'LD ($literal),_A')
+        self.assertEquals([5, 12], C._encode_instruction(instr, ['(12)', 'A'], 8))
+
+    def test_encoding_large_number(self):
+        instr = is_parser.Instruction(5, 2, 'LD ($literal),_A')
+        self.assertEquals(None, C._encode_instruction(instr, ['(666)', 'A'], 4))
 
 
 class FindMatchingInstructionTestCase(unittest.TestCase):
@@ -104,6 +119,7 @@ class BinaryToASCIITestCase(unittest.TestCase):
 
     def test_encoding_large_object(self):
         self.assertEquals('00000010\n00000011\n11111111\n00000111\n', C._binary_to_ascii([2, 3, 255, 7], 8))
+
 
 class AdjustAddressesTestCase(unittest.TestCase):
     """Tests for the _adjust_addresses function of the compiler"""
