@@ -79,7 +79,7 @@ class InputPreprocessor:
                 with open(file, 'r') as fin:
                     lines = fin.read().split('\n')
             except FileNotFoundError:
-                PREPROCESSOR_ERR_INVALID_FILE.print_raise(-1, '')
+                PREPROCESSOR_ERR_INVALID_FILE.print_exit(-1, '')
 
         # Remove empty lines
         lines = [line for line in lines if len(line.strip()) > 0]

@@ -1,15 +1,13 @@
-test0:          ; Comments!
-	INP A
-	LD B, A     ; More comments.
-	INP A
-	LD C, A
-	LD A, 0
+        INP A, 0        ; Load a value from Input#0 into the Accumulator
+        LD B, 0         ; Load 0 into B
 loop:
-	ADD A, C
-	DEC B       ; Another comment.
-	JP P, loop
-	JP M, test0
-	OUT A
-	JP test1
-test1:
-	HALT
+        CP A, 0         ; Compare A with 0
+        JP Z, end       ; If A == 0 go to end
+        SRL A           ; Shift A once to the right
+        INC B           ; Increment B
+        JP loop         ; Go to loop
+end:
+        LD A, B         ; Copy B into the Accumulator
+        OUT A, 0        ; Display the Accumulator on Output#0
+        HALT            ; Terminate the program's execution
+

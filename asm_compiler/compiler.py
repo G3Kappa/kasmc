@@ -42,7 +42,7 @@ class Compiler:
     def _tokenize_line(cls, line):
         # Note: Please don't try to understand it. One victim is enough already. Just know that it works.
         regexp = r'^(?P<instruction>\w+)(?:\s+(?P<arg1>\.?[a-zA-Z0-9]+)' \
-                 r'(?P<extraargs>(?:\s*,\s*[a-zA-Z0-9]+\s*)*))?$'
+                 r'(?P<extraargs>(?:\s*,\s*\(?\s*[a-zA-Z0-9]+\s*\)?\s*)*))?$'
         # Examples covered by this regex:
         # LD A, B
         # LD A,B
@@ -76,8 +76,8 @@ class Compiler:
         # Note: This is blasphemy! This is madness!
         #       Madness...
         #       ...
-        regexp = r'^(?P<instruction>\w+)(?:\s(?P<arg1>[a-zA-Z]+|\$address|\$literal)' \
-                 r'(?P<extraargs>(?:,[\s_]?(?:[a-zA-Z]+|\$address|\$literal)\s*)*))?$'
+        regexp = r'^(?P<instruction>\w+)(?:\s(?P<arg1>\(?(?:[a-zA-Z]+|\$address|\$literal)\)?)' \
+                 r'(?P<extraargs>(?:,[\s_]?\(?(?:[a-zA-Z]+|\$address|\$literal)\)?\s*)*))?$'
 
         match = re.match(regexp, instr.name)
 
@@ -234,4 +234,3 @@ class Compiler:
                 # Otherwise assume that output is a filename
                 with open(output + '.kobj', 'w') as fout:
                     fout.write(cls._binary_to_ascii(obj, pa.WORD_SIZE))
-
