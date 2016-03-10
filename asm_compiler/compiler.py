@@ -23,9 +23,9 @@ class CompilerError(Exception):
     def print_warn(self, ln, ctx):
         print('COMPILER WARNING {} on line {}: {}\n\t--> {}'.format(self.error_id, ln, self.error_msg, ctx))
 
-    def print_raise(self, ln, ctx):
+    def print_exit(self, ln, ctx):
         self.print_err(ln, ctx)
-        raise self
+        exit(self.error_id)
 
 
 COMPILER_ERR_INVALID_FILE = CompilerError(1, 'Could not read the input file.')
@@ -194,11 +194,11 @@ class Compiler:
             # Split the line in tokens
             tokens = cls._tokenize_line(cur_line)
             if tokens is None:
-                COMPILER_ERR_MISSING_SYMBOL.print_raise(ln, cur_line)
+                COMPILER_ERR_MISSING_SYMBOL.print_exit(ln, cur_line)
             # Find the instruction with the best-matching signature
             instr = cls._find_matching_instruction(pa, tokens)
             if instr is None:
-                COMPILER_ERR_UNDEFINED_INSTRUCTION.print_raise(ln, cur_line)
+                COMPILER_ERR_UNDEFINED_INSTRUCTION.print_exit(ln, cur_line)
             # Add the instruction and its given args to the program
             program.append({'instruction': instr, 'args': tokens['args']})
             ln += 1
@@ -213,7 +213,7 @@ class Compiler:
             # Encode the instruction, and its arguments, and append it to the object file
             encoded_instr = cls._encode_instruction(call['instruction'], call['args'])
             if encoded_instr is None:
-                COMPILER_ERR_UNCOMPILABLE_INSTRUCTION.print_raise(i, call['instruction'])
+                COMPILER_ERR_UNCOMPILABLE_INSTRUCTION.print_exit(i, call['instruction'])
 
             obj.extend(encoded_instr)
 

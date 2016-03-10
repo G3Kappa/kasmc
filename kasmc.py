@@ -16,6 +16,10 @@ if __name__ == '__main__':
 
     args = arg_parser.parse_args()
 
+    if args.processor_architecture is None or args.input is None:
+        print('A source file and a processor architecture file must be passed.')
+        exit(1)
+
     # Parse the ProcessorArchitecture object
     parse_start = time.time()
     processor_architecture = is_parser.InstructionSetParser.parse_file(args.processor_architecture)

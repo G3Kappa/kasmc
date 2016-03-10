@@ -34,9 +34,9 @@ class ParserError(Exception):
     def print_warn(self, ln, ctx):
         print('PREPROCESSOR WARNING {} on line {}: {}\n\t--> {}'.format(self.error_id, ln, self.error_msg, ctx))
 
-    def print_raise(self, ln, ctx):
+    def print_exit(self, ln, ctx):
         self.print_err(ln, ctx)
-        raise self
+        exit(self.error_id)
 
 PARSER_ERR_INVALID_FILE = ParserError(1, 'Could not read the input file.')
 PARSER_ERR_INVALID_SYNTAX = ParserError(2, 'Invalid syntax. (Bad keyword or argument misuse?)')
@@ -65,7 +65,7 @@ class InstructionSetParser:
         # Check that an instruction with the same opcode wasn't added
         for instr in pa.INSTRUCTION_SET:
             if instr.opcode == opcode:
-                PARSER_ERR_DUPLICATE_OPCODE.print_raise(ln, line)
+                PARSER_ERR_DUPLICATE_OPCODE.print_exit(ln, line)
 
         # Create an Instruction and add it to the Instruction Set of our PA
         pa.INSTRUCTION_SET.append(Instruction(opcode, size, syntax))
@@ -126,7 +126,7 @@ class InstructionSetParser:
 
         # If this flag is not set, no keyword was matched and this line is thus invalid
         if not keyword_found:
-            PARSER_ERR_INVALID_SYNTAX.print_raise(ln, line)
+            PARSER_ERR_INVALID_SYNTAX.print_exit(ln, line)
 
     @classmethod
     def parse_file(cls, file):
@@ -145,7 +145,7 @@ class InstructionSetParser:
                 with open(file, 'r') as fin:
                     lines = fin.read().split('\n')
             except FileNotFoundError:
-                PARSER_ERR_INVALID_FILE.print_raise(-1, '')
+                PARSER_ERR_INVALID_FILE.print_exit(-1, '')
 
         # Remove empty lines
         lines = [line for line in lines if len(line.strip()) > 0]

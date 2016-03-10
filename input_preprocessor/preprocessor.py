@@ -22,9 +22,9 @@ class PreprocessorError(Exception):
     def print_warn(self, ln, ctx):
         print('PREPROCESSOR WARNING {} on line {}: {}\n\t--> {}'.format(self.error_id, ln, self.error_msg, ctx))
 
-    def print_raise(self, ln, ctx):
+    def print_exit(self, ln, ctx):
         self.print_err(ln, ctx)
-        raise self
+        exit(self.error_id)
 
 PREPROCESSOR_ERR_INVALID_FILE = PreprocessorError(1, 'Could not read the input file.')
 PREPROCESSOR_ERR_INVALID_LABEL = PreprocessorError(2, 'Labels must be defined on a separate line.')
@@ -101,7 +101,7 @@ class InputPreprocessor:
                 label = cls._extract_label(cur_line)
                 # If a label was defined (label:) but it wasn't alone on its own line, raise an INVALID_LABEL error.
                 if label is None:
-                    PREPROCESSOR_ERR_INVALID_LABEL.print_raise(ln, cur_line)
+                    PREPROCESSOR_ERR_INVALID_LABEL.print_exit(ln, cur_line)
                 # Set the address pointed to by this label to the current line number.
                 # NOTE: The compiler will take care of offsetting these values accordingly.
                 label_addresses[label] = ln
