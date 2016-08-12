@@ -1,4 +1,4 @@
-# KASMc: Kappa's Assembly Compiler
+# KASMc: K Assembly Compiler
 
 KASMc is a compiler for **assembly-like** pseudolanguages written in Python 3.5.
 It was made for the purpose of generating binary files for a simple virtual microprocessor.
